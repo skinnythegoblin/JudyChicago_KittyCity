@@ -11,6 +11,13 @@ TagManager:
   - 
   - Water
   - UI
+  - Ground
+  - Hats
+  - Planter
+  - Plants
+  - Resource Drops
+  - Reclaim Tools
+  - Player Hands
   - 
   - 
   - 
@@ -30,13 +37,6 @@ TagManager:
   - 
   - 
   - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - Spatial Awareness
   m_SortingLayers:
   - name: Default
     uniqueID: 0

@@ -6,11 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 0
-    path: Assets/Scenes/SampleScene.unity
-    guid: 9fc0d4010bbf28b4594072e72b8655ab
-  - enabled: 1
-    path: Assets/Scenes/HololensTestScene.unity
-    guid: b667bac42cb280d4e84d8cb7ad505b5a
+    path: 
+    guid: 00000000000000000000000000000000
   m_configObjects:
-    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 609f6d6650c0b4b4cbaf26e8c6fd2f3b, type: 2}
-    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: dd4232828129e8f44a77b290c1498599, type: 2}
+    Unity.XR.Oculus.Settings: {fileID: 11400000, guid: 8fccb80e6c9a84389a75f2c1ed4d786d, type: 2}
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: d3134b6f939114be9b8d6dbeff42d453, type: 2}
+    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: 2b485d7676a7d4b3eba3a764bd60d013, type: 2}
