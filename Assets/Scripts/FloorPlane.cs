@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -20,7 +20,7 @@ public class FloorPlane : MonoBehaviour
     {
         if (_geometry == null || _geometry.Length == 0)
         {
-            //_geometry = OVRManager.boundary.GetGeometry(OVRBoundary.BoundaryType.PlayArea);
+            _geometry = OVRManager.boundary.GetGeometry(OVRBoundary.BoundaryType.PlayArea);
 
             if (_geometry.Length >= 0)
             {
