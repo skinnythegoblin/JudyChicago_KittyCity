@@ -26,6 +26,7 @@ public class CatController : MonoBehaviour
 	[SerializeField, ReadOnly] private float _actionTimer;
 	[SerializeField, ReadOnly] private CatState _state;
 	[SerializeField, ReadOnly] private Vector3 _destination;
+	[SerializeField] GameObject destinationDebug;
 	
 	private float IdleTime => Random.Range(_idleTimeMinMax.x, _idleTimeMinMax.y);
 	private float SittingTime => Random.Range(_sittingTimeMinMax.x, _sittingTimeMinMax.y);
@@ -37,6 +38,16 @@ public class CatController : MonoBehaviour
 			_animator = GetComponent<Animator>();
 			if (!_animator) _animator = GetComponentInChildren<Animator>();
 		}
+	}
+
+	private void OnEnable()
+	{
+		FloorMappingController.OnFloorUpdated += SnapDestinationToFloor;
+	}
+
+	private void OnDisable()
+	{
+		FloorMappingController.OnFloorUpdated -= SnapDestinationToFloor;
 	}
 	
 	private void Update()
@@ -88,6 +99,8 @@ public class CatController : MonoBehaviour
 		_state = CatState.Idle;
 		SetAnimatorBools(false, false);
 		_actionTimer = IdleTime;
+
+		destinationDebug.SetActive(false);
 	}
 	
 	[Button(Mode = RuntimeMode.OnlyPlaying)]
@@ -96,6 +109,8 @@ public class CatController : MonoBehaviour
 		_state = CatState.Sitting;
 		SetAnimatorBools(true, false);
 		_actionTimer = SittingTime;
+
+		destinationDebug.SetActive(false);
 	}
 	
 	[Button(Mode = RuntimeMode.OnlyPlaying)]
@@ -106,18 +121,31 @@ public class CatController : MonoBehaviour
 		SetAnimatorBools(false, true);
 		SetNewDestination();
 		_actionTimer = prevState == CatState.Sitting ? 2 : 0;
+
+		destinationDebug.SetActive(true);
 	}
 	
 	private void SetNewDestination()
 	{
 		float x = Random.Range(-2f, 2f);
 		float z = Random.Range(-2f, 2f);
-		_destination = new Vector3(x, 0, z);
+		_destination = transform.TransformPoint(new Vector3(x, 0, z));
+		destinationDebug.transform.position = _destination + new Vector3(0, 0.05f, 0);
+	}
+
+	private void SnapDestinationToFloor()
+	{
+		_destination.y = FloorMappingController.FloorLevel;
 	}
 	
 	private void WalkToDestination()
 	{
-		//Vector3 pos = Vector3.Slerp(transform.position, _destination, _walkingSpeed * Time.deltaTime);
+		if (_destination.y != FloorMappingController.FloorLevel)
+		{
+			_destination.y = FloorMappingController.FloorLevel;
+			destinationDebug.transform.position = _destination + new Vector3(0, 0.05f, 0);
+		}
+		
 		Vector3 pos = transform.position + transform.forward * _walkingSpeed * Time.deltaTime;
 		
 		Quaternion originalRot = transform.rotation;

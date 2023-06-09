@@ -1,12 +1,15 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using System.Linq;
+using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class FloorMappingController : MonoBehaviour
 {
 	[SerializeField] private bool _active = true;
 	[SerializeField] private float _tickRate = 2.0f;
+	[SerializeField] private Transform _trackingSpace;
 	
 	[Header("Markers")]
 	[SerializeField] private bool _markersEnabled = true;
@@ -14,14 +17,16 @@ public class FloorMappingController : MonoBehaviour
 	
 	[Header("Mesh")]
 	[SerializeField] private bool _meshEnabled = true;
-	[SerializeField] private MeshFilter _meshFilter;
-	[SerializeField] private MeshRenderer _meshRenderer;
+	[SerializeField] GameObject _floorMesh;
+	private MeshFilter _meshFilter;
+	private MeshRenderer _meshRenderer;
+
+	public static float FloorLevel { get; private set; } = 0;
+	public static event Action OnFloorUpdated;
 	
 	private float _tickTimer;
 	private Vector3[] _floorPoints;
-	
 	private List<GameObject> _floorMarkers = new List<GameObject>();
-	
 	private Mesh _mesh;
 	
 	private void OnEnable()
@@ -32,6 +37,8 @@ public class FloorMappingController : MonoBehaviour
 	private void Start()
 	{
 		_floorMarker.SetActive(false);
+		_meshFilter = _floorMesh.GetComponent<MeshFilter>();
+		_meshRenderer = _floorMesh.GetComponent<MeshRenderer>();
 	}
 	
 	private void Update()
@@ -59,6 +66,8 @@ public class FloorMappingController : MonoBehaviour
 		// deprecated and no longer works on Oculus. This means we can only use PlayArea, which is a 4 point rectangle of
 		// the playable area, so only expect _floorPoints to be an array of size 4.
 		
+		OnFloorUpdated?.Invoke();
+		
 		if (_markersEnabled) UpdateMarkers();
 		if (_meshEnabled) UpdateMesh();
 	}
@@ -71,8 +80,9 @@ public class FloorMappingController : MonoBehaviour
 			if (i >= _floorMarkers.Count) CreateNewFloorMarker();
 			
 			var marker = _floorMarkers[i++];
-			marker.transform.position = point;
+			marker.transform.position = point - _trackingSpace.position;
 			marker.SetActive(true);
+			FloorLevel = marker.transform.position.y;
 		}
 		for (; i < _floorMarkers.Count; i++)
 		{
@@ -90,9 +100,11 @@ public class FloorMappingController : MonoBehaviour
 		// Not currently working, focused on getting the points to be positioned correctly first. But in theory this would generate
 		// a floor mesh so you could see where the floor actually is
 
-		// 0 2 1 , 1 2 3
-		_mesh.vertices = new Vector3[] { _floorPoints[0], _floorPoints[2], _floorPoints[1], _floorPoints[1], _floorPoints[2], _floorPoints[3], };
-		_mesh.normals = new Vector3[] { Vector3.up, Vector3.up, Vector3.up, Vector3.up, Vector3.up, Vector3.up };
+		// 0 1 3 , 1 2 3
+
+		_mesh.SetVertices(new Vector3[] { _floorPoints[0], _floorPoints[1], _floorPoints[2], _floorPoints[3] });
+		_mesh.SetNormals(new Vector3[] { Vector3.up, Vector3.up, Vector3.up, Vector3.up });
+		_mesh.triangles = new int[] { 3, 1, 0, 3, 2, 1};
 		_meshFilter.mesh = _mesh;
 	}
 }
