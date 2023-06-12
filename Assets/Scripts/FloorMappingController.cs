@@ -17,7 +17,8 @@ public class FloorMappingController : MonoBehaviour
 	
 	[Header("Mesh")]
 	[SerializeField] private bool _meshEnabled = true;
-	[SerializeField] GameObject _floorMesh;
+	[SerializeField] private GameObject _floorMesh;
+	[SerializeField] private NavBaker _navigationBaker;
 	private MeshFilter _meshFilter;
 	private MeshRenderer _meshRenderer;
 
@@ -80,7 +81,7 @@ public class FloorMappingController : MonoBehaviour
 			if (i >= _floorMarkers.Count) CreateNewFloorMarker();
 			
 			var marker = _floorMarkers[i++];
-			marker.transform.position = point - _trackingSpace.position;
+			marker.transform.position = point;// - _trackingSpace.position;
 			marker.SetActive(true);
 			FloorLevel = marker.transform.position.y;
 		}
@@ -97,10 +98,7 @@ public class FloorMappingController : MonoBehaviour
 	
 	private void UpdateMesh()
 	{
-		// Not currently working, focused on getting the points to be positioned correctly first. But in theory this would generate
-		// a floor mesh so you could see where the floor actually is
-
-		// 0 1 3 , 1 2 3
+		// 3 1 0 , 3 2 1
 
 		_mesh.SetVertices(new Vector3[] { _floorPoints[0], _floorPoints[1], _floorPoints[2], _floorPoints[3] });
 		_mesh.SetNormals(new Vector3[] { Vector3.up, Vector3.up, Vector3.up, Vector3.up });

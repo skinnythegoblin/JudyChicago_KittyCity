@@ -26,7 +26,8 @@ public class CatController : MonoBehaviour
 	[SerializeField, ReadOnly] private float _actionTimer;
 	[SerializeField, ReadOnly] private CatState _state;
 	[SerializeField, ReadOnly] private Vector3 _destination;
-	[SerializeField] GameObject destinationDebug;
+	[SerializeField] bool _useDestinationDebug = true;
+	[SerializeField] GameObject _destinationDebug;
 	
 	private float IdleTime => Random.Range(_idleTimeMinMax.x, _idleTimeMinMax.y);
 	private float SittingTime => Random.Range(_sittingTimeMinMax.x, _sittingTimeMinMax.y);
@@ -100,7 +101,7 @@ public class CatController : MonoBehaviour
 		SetAnimatorBools(false, false);
 		_actionTimer = IdleTime;
 
-		destinationDebug.SetActive(false);
+		if (_useDestinationDebug) _destinationDebug.SetActive(false);
 	}
 	
 	[Button(Mode = RuntimeMode.OnlyPlaying)]
@@ -110,7 +111,7 @@ public class CatController : MonoBehaviour
 		SetAnimatorBools(true, false);
 		_actionTimer = SittingTime;
 
-		destinationDebug.SetActive(false);
+		if (_useDestinationDebug) _destinationDebug.SetActive(false);
 	}
 	
 	[Button(Mode = RuntimeMode.OnlyPlaying)]
@@ -122,7 +123,7 @@ public class CatController : MonoBehaviour
 		SetNewDestination();
 		_actionTimer = prevState == CatState.Sitting ? 2 : 0;
 
-		destinationDebug.SetActive(true);
+		if (_useDestinationDebug) _destinationDebug.SetActive(true);
 	}
 	
 	private void SetNewDestination()
@@ -130,7 +131,7 @@ public class CatController : MonoBehaviour
 		float x = Random.Range(-2f, 2f);
 		float z = Random.Range(-2f, 2f);
 		_destination = transform.TransformPoint(new Vector3(x, 0, z));
-		destinationDebug.transform.position = _destination + new Vector3(0, 0.05f, 0);
+		if (_useDestinationDebug) _destinationDebug.transform.position = _destination + new Vector3(0, 0.05f, 0);
 	}
 
 	private void SnapDestinationToFloor()
@@ -143,7 +144,7 @@ public class CatController : MonoBehaviour
 		if (_destination.y != FloorMappingController.FloorLevel)
 		{
 			_destination.y = FloorMappingController.FloorLevel;
-			destinationDebug.transform.position = _destination + new Vector3(0, 0.05f, 0);
+			if (_useDestinationDebug) _destinationDebug.transform.position = _destination + new Vector3(0, 0.05f, 0);
 		}
 		
 		Vector3 pos = transform.position + transform.forward * _walkingSpeed * Time.deltaTime;
