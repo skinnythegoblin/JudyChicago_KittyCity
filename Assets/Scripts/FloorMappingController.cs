@@ -17,11 +17,13 @@ public class FloorMappingController : MonoBehaviour
 	
 	[Header("Mesh")]
 	[SerializeField] private bool _meshEnabled = true;
-	[SerializeField] GameObject _floorMesh;
+	[SerializeField] private GameObject _floorMesh;
+	[SerializeField] private NavBaker _navigationBaker;
 	private MeshFilter _meshFilter;
 	private MeshRenderer _meshRenderer;
 
 	public static float FloorLevel { get; private set; } = 0;
+	public static float[] FloorBounds { get; private set; } = { 0, 0, 0, 0 };
 	public static event Action OnFloorUpdated;
 	
 	private float _tickTimer;
@@ -70,6 +72,8 @@ public class FloorMappingController : MonoBehaviour
 		
 		if (_markersEnabled) UpdateMarkers();
 		if (_meshEnabled) UpdateMesh();
+
+		SetFloorBounds();
 	}
 	
 	private void UpdateMarkers()
@@ -80,7 +84,7 @@ public class FloorMappingController : MonoBehaviour
 			if (i >= _floorMarkers.Count) CreateNewFloorMarker();
 			
 			var marker = _floorMarkers[i++];
-			marker.transform.position = point - _trackingSpace.position;
+			marker.transform.position = point;
 			marker.SetActive(true);
 			FloorLevel = marker.transform.position.y;
 		}
@@ -97,14 +101,23 @@ public class FloorMappingController : MonoBehaviour
 	
 	private void UpdateMesh()
 	{
-		// Not currently working, focused on getting the points to be positioned correctly first. But in theory this would generate
-		// a floor mesh so you could see where the floor actually is
+		// 3 1 0 , 3 2 1
 
-		// 0 1 3 , 1 2 3
-
+		_mesh.Clear();
 		_mesh.SetVertices(new Vector3[] { _floorPoints[0], _floorPoints[1], _floorPoints[2], _floorPoints[3] });
 		_mesh.SetNormals(new Vector3[] { Vector3.up, Vector3.up, Vector3.up, Vector3.up });
 		_mesh.triangles = new int[] { 3, 1, 0, 3, 2, 1};
 		_meshFilter.mesh = _mesh;
+	}
+
+	private void SetFloorBounds()
+	{
+		foreach (Vector3 point in _floorPoints)
+		{
+			if (point.x < FloorBounds[0]) FloorBounds[0] = point.x;
+			if (point.x > FloorBounds[1]) FloorBounds[1] = point.x;
+			if (point.z < FloorBounds[2]) FloorBounds[2] = point.z;
+			if (point.z > FloorBounds[3]) FloorBounds[3] = point.z;
+		}
 	}
 }
