@@ -1,7 +1,8 @@
-﻿using System.Collections;
+﻿using CoffeyUtils;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using CoffeyUtils;
+using UnityEngine.AI;
 
 public enum CatState
 {
@@ -10,6 +11,7 @@ public enum CatState
 	Sitting
 }
 
+[RequireComponent(typeof(DirectedNavMeshAgent))]
 public class CatController : MonoBehaviour
 {
 	[Header("Settings")]
@@ -43,12 +45,12 @@ public class CatController : MonoBehaviour
 
 	private void OnEnable()
 	{
-		FloorMappingController.OnFloorUpdated += SnapDestinationToFloor;
+		NavBaker.OnNavigationBaked += SnapDestinationToFloor;
 	}
 
 	private void OnDisable()
 	{
-		FloorMappingController.OnFloorUpdated -= SnapDestinationToFloor;
+		NavBaker.OnNavigationBaked -= SnapDestinationToFloor;
 	}
 	
 	private void Update()
@@ -61,12 +63,8 @@ public class CatController : MonoBehaviour
 				var dist = Vector3.Distance(transform.position, _destination);
 				if (dist < _distToReachDestination)
 				{
-					// Reached Destination. Set New State
+					// Reached destination. Set new state
 					SetRandomState();
-				}
-				else
-				{
-					WalkToDestination();
 				}
 			}
 			else
@@ -128,19 +126,42 @@ public class CatController : MonoBehaviour
 	
 	private void SetNewDestination()
 	{
-		float x = Random.Range(-2f, 2f);
-		float z = Random.Range(-2f, 2f);
-		_destination = transform.TransformPoint(new Vector3(x, 0, z));
+		float x, z;
+		if (FloorMappingController.FloorBounds[0] != FloorMappingController.FloorBounds[1] &&
+			FloorMappingController.FloorBounds[2] != FloorMappingController.FloorBounds[3])
+		{
+			x = Random.Range(FloorMappingController.FloorBounds[0], FloorMappingController.FloorBounds[1]);
+			z = Random.Range(FloorMappingController.FloorBounds[2], FloorMappingController.FloorBounds[3]);
+		}
+		else
+		{
+			x = Random.Range(-2f, 2f);
+			z = Random.Range(-2f, 2f);
+		}
+
+		_destination = new Vector3(x, FloorMappingController.FloorLevel, z);
 		if (_useDestinationDebug) _destinationDebug.transform.position = _destination + new Vector3(0, 0.05f, 0);
+
+		StartCoroutine(TryMove());
 	}
 
 	private void SnapDestinationToFloor()
 	{
-		_destination.y = FloorMappingController.FloorLevel;
+		if (Mathf.Clamp(_destination.x, FloorMappingController.FloorBounds[0], FloorMappingController.FloorBounds[1]) != _destination.x ||
+			Mathf.Clamp(_destination.z, FloorMappingController.FloorBounds[2], FloorMappingController.FloorBounds[3])!= _destination.z)
+		{
+			SetNewDestination();
+		}
+		else
+		{
+			_destination.y = FloorMappingController.FloorLevel;
+			GetComponent<DirectedNavMeshAgent>().MoveToLocation(_destination);
+		}
 	}
 	
 	private void WalkToDestination()
 	{
+		/*
 		if (_destination.y != FloorMappingController.FloorLevel)
 		{
 			_destination.y = FloorMappingController.FloorLevel;
@@ -154,6 +175,20 @@ public class CatController : MonoBehaviour
 		Quaternion rot = Quaternion.Slerp(originalRot, transform.rotation, _turningSpeed * Time.deltaTime);
 		
 		transform.SetPositionAndRotation(pos, rot);
+		*/
+	}
+
+	private IEnumerator TryMove()
+	{
+		if (NavBaker.HasBaked)
+		{
+			GetComponent<DirectedNavMeshAgent>().MoveToLocation(_destination);
+		}
+		else
+		{
+			yield return new WaitForSeconds(1);
+			TryMove();
+		}
 	}
 	
 	private void SetAnimatorBools(bool sit, bool walk)

@@ -18,4 +18,10 @@ public class DirectedNavMeshAgent : MonoBehaviour
         _agent.destination = targetPoint;
         _agent.isStopped = false;
     }
+
+    public void Stop()
+    {
+        _agent.destination = transform.position;
+        _agent.isStopped = true;
+    }
 }
