@@ -12,6 +12,7 @@ public enum CatState
 }
 
 [RequireComponent(typeof(DirectedNavMeshAgent))]
+[RequireComponent(typeof(CatPersonality))]
 public class CatController : MonoBehaviour
 {
 	[Header("Settings")]
@@ -34,7 +35,9 @@ public class CatController : MonoBehaviour
 	private float IdleTime => Random.Range(_idleTimeMinMax.x, _idleTimeMinMax.y);
 	private float SittingTime => Random.Range(_sittingTimeMinMax.x, _sittingTimeMinMax.y);
 
-	private bool isTouched = false;
+	private CatPersonality _personality;
+
+	public CatState State => _state;
 	
 	private void OnValidate()
 	{
@@ -54,6 +57,11 @@ public class CatController : MonoBehaviour
 	{
 		NavBaker.OnNavigationBaked -= SnapDestinationToFloor;
 	}
+
+	private void Start()
+	{
+		_personality = GetComponent<CatPersonality>();
+	}
 	
 	private void Update()
 	{
@@ -71,14 +79,14 @@ public class CatController : MonoBehaviour
 			}
 			else
 			{
-				if (!isTouched) SetRandomState();
+				if (!_personality.IsTouched) SetRandomState();
 				else SetRandomStateStopped();
 			}
 		}
 	}
 	
 	[Button(Mode = RuntimeMode.OnlyPlaying, Spacing = 24)]
-	private void SetRandomState()
+	public void SetRandomState()
 	{
 		int nextAction = Random.Range(0, 3);
 		switch (nextAction)
@@ -95,9 +103,11 @@ public class CatController : MonoBehaviour
 		}
 	}
 
+	// Forces cat to choose a non-moving state
 	[Button(Mode = RuntimeMode.OnlyPlaying, Spacing = 24)]
-	private void SetRandomStateStopped()
+	public void SetRandomStateStopped()
 	{
+		// The cat cannot stand up if it is already sitting. This is completely arbitrary, feel free to change if wanted.
 		if (_state == CatState.Sitting) SetSitting();
 		else
 		{
@@ -145,10 +155,22 @@ public class CatController : MonoBehaviour
 
 		if (_useDestinationDebug) _destinationDebug.SetActive(true);
 	}
+
+	public void MoveToPosition(Vector3 position)
+	{
+		CatState prevState = _state;
+		_state = CatState.Walking;
+		SetAnimatorBools(false, true);
+		SetNewDestination(position);
+		_actionTimer = prevState == CatState.Sitting ? 2 : 0;
+
+		if (_useDestinationDebug) _destinationDebug.SetActive(true);
+	}
 	
 	private void SetNewDestination()
 	{
 		float x, z;
+		// TODO: Once the gallery floor plan is added and baked, this should be modified to choose a point on the baked NavMesh as opposed to a point within the play area
 		if (FloorMappingController.FloorBounds[0] != FloorMappingController.FloorBounds[1] &&
 			FloorMappingController.FloorBounds[2] != FloorMappingController.FloorBounds[3])
 		{
@@ -163,14 +185,30 @@ public class CatController : MonoBehaviour
 
 		_destination = new Vector3(x, FloorMappingController.FloorLevel, z);
 		if (_useDestinationDebug) _destinationDebug.transform.position = _destination + new Vector3(0, 0.05f, 0);
-
 		StartCoroutine(TryMove());
+	}
+
+	// Sets the destination directly, throwing an error if the cat can't get to that point.
+	private void SetNewDestination(Vector3 position)
+	{
+		position.y = FloorMappingController.FloorLevel;
+		if (!GetComponent<NavMeshAgent>().CalculatePath(position, new NavMeshPath()))
+		{
+			Debug.LogError("Destination is not navigable to this NavMeshAgent via the existing NavMesh.", this);
+			return;
+		}
+		else
+		{
+			_destination = position;
+			if (_useDestinationDebug) _destinationDebug.transform.position = _destination + (Vector3.up * 0.05f);
+			StartCoroutine(TryMove());
+		}
 	}
 
 	private void SnapDestinationToFloor()
 	{
 		if (Mathf.Clamp(_destination.x, FloorMappingController.FloorBounds[0], FloorMappingController.FloorBounds[1]) != _destination.x ||
-			Mathf.Clamp(_destination.z, FloorMappingController.FloorBounds[2], FloorMappingController.FloorBounds[3])!= _destination.z)
+			Mathf.Clamp(_destination.z, FloorMappingController.FloorBounds[2], FloorMappingController.FloorBounds[3]) != _destination.z)
 		{
 			SetNewDestination();
 		}
@@ -183,6 +221,9 @@ public class CatController : MonoBehaviour
 
 	private IEnumerator TryMove()
 	{
+		// NOTE: This function should be phased out once the official gallery floor plan is implemented
+
+		// Attempts to moveto a destination if there is an available NavMesh. Waits if no NavMesh has been baked yet.
 		if (NavBaker.HasBaked)
 		{
 			GetComponent<DirectedNavMeshAgent>().MoveToLocation(_destination);
@@ -200,21 +241,5 @@ public class CatController : MonoBehaviour
 		_animator.SetBool("Walking", walk);
 	}
 
-	void OnTriggerEnter(Collider other)
-	{
-		if (other.GetComponent<OVRHand>() != null)
-		{
-			isTouched = true;
-			if (_state == CatState.Walking) GetComponent<DirectedNavMeshAgent>().Stop();
-			SetRandomStateStopped();
-		}
-	}
-
-	void OnTriggerExit(Collider other)
-	{
-		if (other.GetComponent<OVRHand>() != null)
-		{
-			isTouched = false;
-		}
-	}
+	
 }

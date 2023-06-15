@@ -104,10 +104,13 @@ public class FloorMappingController : MonoBehaviour
 		// 3 1 0 , 3 2 1
 
 		_mesh.Clear();
-		_mesh.SetVertices(new Vector3[] { _floorPoints[0], _floorPoints[1], _floorPoints[2], _floorPoints[3] });
-		_mesh.SetNormals(new Vector3[] { Vector3.up, Vector3.up, Vector3.up, Vector3.up });
-		_mesh.triangles = new int[] { 3, 1, 0, 3, 2, 1};
-		_meshFilter.mesh = _mesh;
+		if (_floorPoints.Length == 4)
+		{
+			_mesh.SetVertices(new Vector3[] { _floorPoints[0], _floorPoints[1], _floorPoints[2], _floorPoints[3] });
+			_mesh.SetNormals(new Vector3[] { Vector3.up, Vector3.up, Vector3.up, Vector3.up });
+			_mesh.triangles = new int[] { 3, 1, 0, 3, 2, 1};
+			_meshFilter.mesh = _mesh;
+		}
 	}
 
 	private void SetFloorBounds()
