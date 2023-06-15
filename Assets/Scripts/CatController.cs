@@ -33,6 +33,8 @@ public class CatController : MonoBehaviour
 	
 	private float IdleTime => Random.Range(_idleTimeMinMax.x, _idleTimeMinMax.y);
 	private float SittingTime => Random.Range(_sittingTimeMinMax.x, _sittingTimeMinMax.y);
+
+	private bool isTouched = false;
 	
 	private void OnValidate()
 	{
@@ -69,7 +71,8 @@ public class CatController : MonoBehaviour
 			}
 			else
 			{
-				SetRandomState();
+				if (!isTouched) SetRandomState();
+				else SetRandomStateStopped();
 			}
 		}
 	}
@@ -80,15 +83,34 @@ public class CatController : MonoBehaviour
 		int nextAction = Random.Range(0, 3);
 		switch (nextAction)
 		{
-		case 0:
-			SetIdle();
-			break;
-		case 1:
-			SetSitting();
-			break;
-		case 2:
-			SetWalking();
-			break;
+			case 0:
+				SetIdle();
+				break;
+			case 1:
+				SetSitting();
+				break;
+			case 2:
+				SetWalking();
+				break;
+		}
+	}
+
+	[Button(Mode = RuntimeMode.OnlyPlaying, Spacing = 24)]
+	private void SetRandomStateStopped()
+	{
+		if (_state == CatState.Sitting) SetSitting();
+		else
+		{
+			int nextAction = Random.Range(0, 2);
+			switch (nextAction)
+			{
+				case 0:
+					SetIdle();
+					break;
+				case 1:
+					SetSitting();
+					break;
+			}
 		}
 	}
 	
@@ -158,25 +180,6 @@ public class CatController : MonoBehaviour
 			GetComponent<DirectedNavMeshAgent>().MoveToLocation(_destination);
 		}
 	}
-	
-	private void WalkToDestination()
-	{
-		/*
-		if (_destination.y != FloorMappingController.FloorLevel)
-		{
-			_destination.y = FloorMappingController.FloorLevel;
-			if (_useDestinationDebug) _destinationDebug.transform.position = _destination + new Vector3(0, 0.05f, 0);
-		}
-		
-		Vector3 pos = transform.position + transform.forward * _walkingSpeed * Time.deltaTime;
-		
-		Quaternion originalRot = transform.rotation;
-		transform.LookAt(_destination, Vector3.up);
-		Quaternion rot = Quaternion.Slerp(originalRot, transform.rotation, _turningSpeed * Time.deltaTime);
-		
-		transform.SetPositionAndRotation(pos, rot);
-		*/
-	}
 
 	private IEnumerator TryMove()
 	{
@@ -195,5 +198,23 @@ public class CatController : MonoBehaviour
 	{
 		_animator.SetBool("Sitting", sit);
 		_animator.SetBool("Walking", walk);
+	}
+
+	void OnTriggerEnter(Collider other)
+	{
+		if (other.GetComponent<OVRHand>() != null)
+		{
+			isTouched = true;
+			if (_state == CatState.Walking) GetComponent<DirectedNavMeshAgent>().Stop();
+			SetRandomStateStopped();
+		}
+	}
+
+	void OnTriggerExit(Collider other)
+	{
+		if (other.GetComponent<OVRHand>() != null)
+		{
+			isTouched = false;
+		}
 	}
 }
